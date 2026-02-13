@@ -3,7 +3,7 @@
     let variantMode = 'auto'; // 'auto' | 'dark' | 'light'
     let resolvedVariant = 'dark'; // the actual variant being used
     let themeColor = '#3b82f6';
-    let noiseIntensity = 40;
+    let noiseIntensity = 18;
 
     // --- DOM refs ---
     const colorPicker = document.getElementById('color-picker');
@@ -193,7 +193,7 @@
     });
 
     // --- API key management ---
-    const API_KEY_STORAGE = 'brand_4ac2be1e33fc49b18a6c11e12b65735b';
+    const API_KEY_STORAGE = 'pfpgen_branddev_key';
 
     function getApiKey() {
         return localStorage.getItem(API_KEY_STORAGE) || '';
