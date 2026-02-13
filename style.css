@@ -321,6 +321,120 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* --- Footer --- */
+
+/* --- Brand Lookup --- */
+.brand-row {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.brand-row #brand-input {
+    flex: 1;
+    padding: 8px 12px;
+    background-color: var(--stone-950);
+    border: 1px solid var(--stone-500);
+    color: var(--stone-100);
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+.brand-row #brand-input:focus {
+    outline: none;
+    border-color: var(--blue);
+}
+
+.brand-row .action-btn {
+    padding: 0 20px;
+    white-space: nowrap;
+}
+
+#brand-status {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    min-height: 1.2em;
+}
+
+#brand-status.error {
+    color: #ef4444;
+}
+
+#brand-status.success {
+    color: var(--green);
+}
+
+#brand-status.loading {
+    color: var(--stone-400);
+    font-style: italic;
+}
+
+/* --- API Settings --- */
+#api-settings {
+    margin-top: 0.25rem;
+}
+
+#api-settings summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#api-settings summary::before {
+    content: '▸';
+    font-size: 0.75rem;
+    color: var(--stone-500);
+    transition: transform 0.2s;
+}
+
+#api-settings[open] summary::before {
+    transform: rotate(90deg);
+}
+
+#api-settings summary::-webkit-details-marker {
+    display: none;
+}
+
+.section-label.clickable {
+    margin-bottom: 0;
+}
+
+.api-key-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    margin-top: 0.75rem;
+}
+
+.api-key-row .input-group {
+    flex: 1;
+}
+
+.api-key-row .action-btn {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.api-hint {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--stone-500);
+}
+
+.api-hint a {
+    color: var(--stone-400);
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.api-hint a:hover {
+    color: var(--stone-200);
+}
+
+/* --- Footer --- */
 #app-footer {
     margin-top: 2rem;
     color: var(--stone-500);

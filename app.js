@@ -16,6 +16,11 @@
     const dlCustom = document.getElementById('dl-custom');
     const customSizeInput = document.getElementById('custom-size');
     const variantBtns = document.querySelectorAll('.variant-btn');
+    const brandInput = document.getElementById('brand-input');
+    const brandFetchBtn = document.getElementById('brand-fetch-btn');
+    const brandStatus = document.getElementById('brand-status');
+    const apiKeyInput = document.getElementById('api-key-input');
+    const saveKeyBtn = document.getElementById('save-key-btn');
 
     const ctx = previewCanvas.getContext('2d');
 
@@ -185,6 +190,111 @@
     dlCustom.addEventListener('click', () => {
         const size = Math.max(20, Math.min(4096, parseInt(customSizeInput.value) || 512));
         download(size);
+    });
+
+    // --- API key management ---
+    const API_KEY_STORAGE = 'brand_4ac2be1e33fc49b18a6c11e12b65735b';
+
+    function getApiKey() {
+        return localStorage.getItem(API_KEY_STORAGE) || '';
+    }
+
+    // Load saved key into input
+    apiKeyInput.value = getApiKey();
+
+    saveKeyBtn.addEventListener('click', () => {
+        const key = apiKeyInput.value.trim();
+        if (key) {
+            localStorage.setItem(API_KEY_STORAGE, key);
+            setBrandStatus('Key saved', 'success');
+        } else {
+            localStorage.removeItem(API_KEY_STORAGE);
+            setBrandStatus('Key removed', 'success');
+        }
+    });
+
+    // --- Brand status helper ---
+    function setBrandStatus(msg, type) {
+        brandStatus.textContent = msg;
+        brandStatus.className = type || '';
+    }
+
+    // --- Set color from external source ---
+    function setColor(hex) {
+        themeColor = hex;
+        colorPicker.value = hex;
+        colorHex.value = hex;
+        render();
+    }
+
+    // --- Brand fetch logic ---
+    async function fetchBrand() {
+        const key = getApiKey();
+        if (!key) {
+            setBrandStatus('Set your brand.dev API key below first', 'error');
+            document.getElementById('api-settings').open = true;
+            return;
+        }
+
+        const query = brandInput.value.trim();
+        if (!query) {
+            setBrandStatus('Enter a brand name or domain', 'error');
+            return;
+        }
+
+        setBrandStatus('Fetching…', 'loading');
+        brandFetchBtn.disabled = true;
+
+        try {
+            // Detect if input looks like a domain
+            const isDomain = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(query);
+            const endpoint = isDomain
+                ? `https://api.brand.dev/v1/brand/retrieve?domain=${encodeURIComponent(query)}&fast=true`
+                : `https://api.brand.dev/v1/brand/retrieve?name=${encodeURIComponent(query)}&fast=true`;
+
+            const res = await fetch(endpoint, {
+                headers: { 'Authorization': `Bearer ${key}` }
+            });
+
+            if (!res.ok) {
+                const errText = await res.text().catch(() => '');
+                if (res.status === 401) {
+                    setBrandStatus('Invalid API key', 'error');
+                } else if (res.status === 404) {
+                    setBrandStatus('Brand not found', 'error');
+                } else {
+                    setBrandStatus(`Error ${res.status}`, 'error');
+                }
+                return;
+            }
+
+            const data = await res.json();
+            const colors = data?.brand?.colors;
+
+            if (!colors || colors.length === 0) {
+                setBrandStatus('No colors found for this brand', 'error');
+                return;
+            }
+
+            // Use the first color as the primary theme color
+            const primary = colors[0].hex;
+            setColor(primary.startsWith('#') ? primary : '#' + primary);
+
+            const brandName = data?.brand?.title || query;
+            const colorName = colors[0].name || primary;
+            setBrandStatus(`${brandName} → ${colorName} (${primary})`, 'success');
+
+        } catch (err) {
+            setBrandStatus('Network error — check console', 'error');
+            console.error('brand.dev fetch error:', err);
+        } finally {
+            brandFetchBtn.disabled = false;
+        }
+    }
+
+    brandFetchBtn.addEventListener('click', fetchBrand);
+    brandInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') fetchBrand();
     });
 
     // --- Initial render ---

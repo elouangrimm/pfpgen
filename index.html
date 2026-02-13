@@ -22,6 +22,16 @@
                 </div>
             </div>
 
+            <!-- Brand lookup -->
+            <div class="section">
+                <label class="section-label">Brand Lookup</label>
+                <div class="brand-row">
+                    <input type="text" id="brand-input" placeholder="e.g. spotify or stripe.com" spellcheck="false">
+                    <button class="action-btn" id="brand-fetch-btn">Fetch</button>
+                </div>
+                <div id="brand-status"></div>
+            </div>
+
             <!-- Color picker -->
             <div class="section">
                 <label class="section-label">Theme Color</label>
@@ -58,6 +68,21 @@
                     </div>
                     <button class="action-btn secondary" id="dl-custom">Download</button>
                 </div>
+            </div>
+
+            <!-- API Key Settings -->
+            <div class="section">
+                <details id="api-settings">
+                    <summary class="section-label clickable">API Settings</summary>
+                    <div class="api-key-row">
+                        <div class="input-group">
+                            <label>brand.dev API Key</label>
+                            <input type="password" id="api-key-input" placeholder="paste your key" spellcheck="false">
+                        </div>
+                        <button class="action-btn secondary" id="save-key-btn">Save</button>
+                    </div>
+                    <p class="api-hint">Get a free key (50 requests) at <a href="https://www.brand.dev/signup" target="_blank">brand.dev</a></p>
+                </details>
             </div>
 
             <!-- Footer -->
