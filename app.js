@@ -1,0 +1,192 @@
+(() => {
+    // --- State ---
+    let variantMode = 'auto'; // 'auto' | 'dark' | 'light'
+    let resolvedVariant = 'dark'; // the actual variant being used
+    let themeColor = '#3b82f6';
+    let noiseIntensity = 40;
+
+    // --- DOM refs ---
+    const colorPicker = document.getElementById('color-picker');
+    const colorHex = document.getElementById('color-hex');
+    const noiseSlider = document.getElementById('noise-slider');
+    const noiseValue = document.getElementById('noise-value');
+    const previewCanvas = document.getElementById('preview-canvas');
+    const dlOriginal = document.getElementById('dl-original');
+    const dl1000 = document.getElementById('dl-1000');
+    const dlCustom = document.getElementById('dl-custom');
+    const customSizeInput = document.getElementById('custom-size');
+    const variantBtns = document.querySelectorAll('.variant-btn');
+
+    const ctx = previewCanvas.getContext('2d');
+
+    // --- Load base images ---
+    const baseDark = new Image();
+    const baseLight = new Image();
+    let darkLoaded = false;
+    let lightLoaded = false;
+
+    baseDark.onload = () => { darkLoaded = true; render(); };
+    baseLight.onload = () => { lightLoaded = true; render(); };
+    baseDark.src = 'assets/base_dark.png';
+    baseLight.src = 'assets/base_light.png';
+
+    // --- Utility: parse hex to RGB ---
+    function hexToRgb(hex) {
+        hex = hex.replace('#', '');
+        if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+        return {
+            r: parseInt(hex.substring(0, 2), 16),
+            g: parseInt(hex.substring(2, 4), 16),
+            b: parseInt(hex.substring(4, 6), 16)
+        };
+    }
+
+    // --- Utility: relative luminance (WCAG) ---
+    function relativeLuminance(r, g, b) {
+        const [rs, gs, bs] = [r, g, b].map(c => {
+            c = c / 255;
+            return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+    }
+
+    // --- Determine best variant for contrast ---
+    function bestVariant(hex) {
+        const { r, g, b } = hexToRgb(hex);
+        const lum = relativeLuminance(r, g, b);
+        // Dark backgrounds => light shirt for contrast, light backgrounds => dark shirt
+        return lum < 0.4 ? 'light' : 'dark';
+    }
+
+    // --- Resolve which variant to actually use ---
+    function resolveVariant() {
+        if (variantMode === 'auto') {
+            resolvedVariant = bestVariant(themeColor);
+        } else {
+            resolvedVariant = variantMode;
+        }
+    }
+
+    // --- Update variant button UI ---
+    function updateVariantUI() {
+        variantBtns.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.variant === variantMode);
+        });
+    }
+
+    // --- Seeded PRNG (simple mulberry32) for deterministic noise per pixel ---
+    function mulberry32(a) {
+        return function() {
+            a |= 0; a = a + 0x6D2B79F5 | 0;
+            let t = Math.imul(a ^ a >>> 15, 1 | a);
+            t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+            return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+    }
+
+    // --- Render the profile picture onto a canvas at a given size ---
+    function renderToCanvas(canvas, size) {
+        const c = canvas.getContext('2d');
+        canvas.width = size;
+        canvas.height = size;
+
+        c.imageSmoothingEnabled = false;
+
+        const { r, g, b } = hexToRgb(themeColor);
+        const intensity = noiseIntensity / 100;
+
+        // Use an offscreen 20x20 canvas for pixel-perfect work
+        const offscreen = document.createElement('canvas');
+        offscreen.width = 20;
+        offscreen.height = 20;
+        const oc = offscreen.getContext('2d');
+
+        // Draw noisy background pixel by pixel
+        const imgData = oc.createImageData(20, 20);
+        const rng = mulberry32(42); // fixed seed for consistent pattern
+        for (let y = 0; y < 20; y++) {
+            for (let x = 0; x < 20; x++) {
+                const i = (y * 20 + x) * 4;
+                // Random noise offset per pixel
+                const noise = (rng() - 0.5) * 2 * intensity * 80;
+                imgData.data[i]     = Math.max(0, Math.min(255, r + noise));
+                imgData.data[i + 1] = Math.max(0, Math.min(255, g + noise));
+                imgData.data[i + 2] = Math.max(0, Math.min(255, b + noise));
+                imgData.data[i + 3] = 255;
+            }
+        }
+        oc.putImageData(imgData, 0, 0);
+
+        // Overlay the character sprite
+        const baseImg = resolvedVariant === 'dark' ? baseDark : baseLight;
+        if (baseImg.complete && baseImg.naturalWidth > 0) {
+            oc.drawImage(baseImg, 0, 0, 20, 20);
+        }
+
+        // Scale up to target size with nearest-neighbor
+        c.imageSmoothingEnabled = false;
+        c.drawImage(offscreen, 0, 0, size, size);
+    }
+
+    // --- Render preview ---
+    function render() {
+        resolveVariant();
+        renderToCanvas(previewCanvas, 200);
+    }
+
+    // --- Download helper ---
+    function download(size) {
+        resolveVariant();
+        const offCanvas = document.createElement('canvas');
+        renderToCanvas(offCanvas, size);
+        const link = document.createElement('a');
+        link.download = `pfp_${size}x${size}.png`;
+        link.href = offCanvas.toDataURL('image/png');
+        link.click();
+    }
+
+    // --- Event: variant buttons ---
+    variantBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            variantMode = btn.dataset.variant;
+            updateVariantUI();
+            render();
+        });
+    });
+
+    // --- Event: color picker ---
+    colorPicker.addEventListener('input', (e) => {
+        themeColor = e.target.value;
+        colorHex.value = themeColor;
+        render();
+    });
+
+    // --- Event: hex input ---
+    colorHex.addEventListener('input', (e) => {
+        let val = e.target.value.trim();
+        if (!val.startsWith('#')) val = '#' + val;
+        if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+            themeColor = val;
+            colorPicker.value = val;
+            render();
+        }
+    });
+
+    // --- Event: noise slider ---
+    noiseSlider.addEventListener('input', (e) => {
+        noiseIntensity = parseInt(e.target.value);
+        noiseValue.textContent = noiseIntensity + '%';
+        render();
+    });
+
+    // --- Event: download buttons ---
+    dlOriginal.addEventListener('click', () => download(20));
+    dl1000.addEventListener('click', () => download(1000));
+    dlCustom.addEventListener('click', () => {
+        const size = Math.max(20, Math.min(4096, parseInt(customSizeInput.value) || 512));
+        download(size);
+    });
+
+    // --- Initial render ---
+    render();
+})();
