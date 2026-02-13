@@ -368,6 +368,37 @@ input[type="range"]::-moz-range-thumb {
     font-style: italic;
 }
 
+/* --- Brand Color Swatches --- */
+#brand-colors {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+
+#brand-colors:empty {
+    display: none;
+}
+
+.color-swatch {
+    width: 36px;
+    height: 36px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s;
+    padding: 0;
+    outline: none;
+}
+
+.color-swatch:hover {
+    transform: scale(1.15);
+}
+
+.color-swatch.active {
+    border-color: var(--stone-100);
+    box-shadow: 0 0 0 2px var(--stone-950);
+}
+
 /* --- API Settings --- */
 #api-settings {
     margin-top: 0.25rem;

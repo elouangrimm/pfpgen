@@ -4,6 +4,7 @@
     let resolvedVariant = 'dark'; // the actual variant being used
     let themeColor = '#3b82f6';
     let noiseIntensity = 18;
+    let brandName = ''; // tracks last fetched brand for filenames
 
     // --- DOM refs ---
     const colorPicker = document.getElementById('color-picker');
@@ -19,6 +20,7 @@
     const brandInput = document.getElementById('brand-input');
     const brandFetchBtn = document.getElementById('brand-fetch-btn');
     const brandStatus = document.getElementById('brand-status');
+    const brandColors = document.getElementById('brand-colors');
     const apiKeyInput = document.getElementById('api-key-input');
     const saveKeyBtn = document.getElementById('save-key-btn');
 
@@ -139,13 +141,27 @@
         renderToCanvas(previewCanvas, 200);
     }
 
+    // --- Derive a clean brand slug from the input ---
+    function getBrandSlug() {
+        const query = brandInput.value.trim();
+        if (!query) return '';
+        // Strip TLD (.com, .co.uk, etc.) and common prefixes
+        return query
+            .replace(/^(https?:\/\/)?(www\.)?/i, '')
+            .replace(/\.[a-z.]{2,}$/i, '')
+            .replace(/[^a-zA-Z0-9]+/g, '_')
+            .replace(/^_|_$/g, '')
+            .toLowerCase();
+    }
+
     // --- Download helper ---
     function download(size) {
         resolveVariant();
         const offCanvas = document.createElement('canvas');
         renderToCanvas(offCanvas, size);
         const link = document.createElement('a');
-        link.download = `pfp_${size}x${size}.png`;
+        const slug = brandName || getBrandSlug();
+        link.download = slug ? `${slug}.png` : `pfp_${size}x${size}.png`;
         link.href = offCanvas.toDataURL('image/png');
         link.click();
     }
@@ -163,6 +179,7 @@
     colorPicker.addEventListener('input', (e) => {
         themeColor = e.target.value;
         colorHex.value = themeColor;
+        brandName = '';
         render();
     });
 
@@ -173,6 +190,7 @@
         if (/^#[0-9a-fA-F]{6}$/.test(val)) {
             themeColor = val;
             colorPicker.value = val;
+            brandName = '';
             render();
         }
     });
@@ -217,6 +235,29 @@
     function setBrandStatus(msg, type) {
         brandStatus.textContent = msg;
         brandStatus.className = type || '';
+    }
+
+    // --- Render color swatches ---
+    function renderColorSwatches(colors, selectedHex) {
+        brandColors.innerHTML = '';
+        if (!colors || colors.length <= 1) return;
+
+        colors.forEach(c => {
+            const hex = c.hex.startsWith('#') ? c.hex : '#' + c.hex;
+            const swatch = document.createElement('button');
+            swatch.className = 'color-swatch' + (hex.toLowerCase() === selectedHex.toLowerCase() ? ' active' : '');
+            swatch.style.backgroundColor = hex;
+            swatch.title = `${c.name || ''} ${hex}`.trim();
+            swatch.addEventListener('click', () => {
+                setColor(hex);
+                // Update active state
+                brandColors.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+                swatch.classList.add('active');
+                const colorName = c.name || hex;
+                setBrandStatus(`${brandStatus.dataset.brandTitle || ''} → ${colorName} (${hex})`.replace(/^\s*→\s*/, ''), 'success');
+            });
+            brandColors.appendChild(swatch);
+        });
     }
 
     // --- Set color from external source ---
@@ -278,11 +319,21 @@
 
             // Use the first color as the primary theme color
             const primary = colors[0].hex;
-            setColor(primary.startsWith('#') ? primary : '#' + primary);
+            const primaryHex = primary.startsWith('#') ? primary : '#' + primary;
+            setColor(primaryHex);
 
-            const brandName = data?.brand?.title || query;
+            const resolvedName = data?.brand?.title || query;
+            // Store clean brand name for download filename
+            brandName = resolvedName
+                .replace(/[^a-zA-Z0-9]+/g, '_')
+                .replace(/^_|_$/g, '')
+                .toLowerCase();
             const colorName = colors[0].name || primary;
-            setBrandStatus(`${brandName} → ${colorName} (${primary})`, 'success');
+            brandStatus.dataset.brandTitle = resolvedName;
+            setBrandStatus(`${resolvedName} → ${colorName} (${primary})`, 'success');
+
+            // Show all colors as clickable swatches
+            renderColorSwatches(colors, primaryHex);
 
         } catch (err) {
             setBrandStatus('Network error — check console', 'error');
