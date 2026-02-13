@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pfpgen</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="content-wrapper">
+            <h1>pfpgen</h1>
+            <h2>generate matching profile pictures</h2>
+
+            <!-- Variant selector -->
+            <div class="section">
+                <label class="section-label">Base</label>
+                <div class="variant-group">
+                    <button class="variant-btn active" data-variant="auto">Auto</button>
+                    <button class="variant-btn" data-variant="dark">Dark Shirt</button>
+                    <button class="variant-btn" data-variant="light">White Shirt</button>
+                </div>
+            </div>
+
+            <!-- Color picker -->
+            <div class="section">
+                <label class="section-label">Theme Color</label>
+                <div class="color-row">
+                    <input type="color" id="color-picker" value="#3b82f6">
+                    <input type="text" id="color-hex" value="#3b82f6" maxlength="7" spellcheck="false">
+                </div>
+                <div class="noise-row">
+                    <label class="section-label small">Noise Intensity</label>
+                    <input type="range" id="noise-slider" min="0" max="100" value="40">
+                    <span id="noise-value">40%</span>
+                </div>
+            </div>
+
+            <!-- Preview -->
+            <div class="section">
+                <label class="section-label">Preview</label>
+                <div class="preview-area">
+                    <canvas id="preview-canvas" width="200" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Download controls -->
+            <div class="section">
+                <label class="section-label">Download</label>
+                <div class="size-group">
+                    <button class="action-btn" id="dl-original">Original (20×20)</button>
+                    <button class="action-btn" id="dl-1000">1000×1000</button>
+                </div>
+                <div class="custom-size-row">
+                    <div class="input-group">
+                        <label>Custom Size (px)</label>
+                        <input type="number" id="custom-size" value="512" min="20" max="4096">
+                    </div>
+                    <button class="action-btn secondary" id="dl-custom">Download</button>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div id="app-footer">
+                <a href="https://github.com/elouangrimm/pfpgen" target="_blank">github</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
